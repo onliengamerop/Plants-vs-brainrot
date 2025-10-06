@@ -29,29 +29,6 @@ jobs:
           # (Optional) Restart the Remote Desktop service to ensure changes take effect
           Restart-Service -Name TermService -Force
 
-      - name: Disable VM Detection Features
-        run: |
-          # Disable Core Isolation (Memory Integrity)
-          Set-MpPreference -DisableBehaviorMonitoring $true
-          # Note: Full disable requires registry; run as admin
-          Set-ItemProperty -Path 'HKLM:\SYSTEM\CurrentControlSet\Control\DeviceGuard\Scenarios\HypervisorEnforcedCodeIntegrity' -Name "Enabled" -Value 0 -Force
-          
-          # Disable Hyper-V and related features
-          Disable-WindowsOptionalFeature -Online -FeatureName Microsoft-Hyper-V-All -NoRestart
-          Disable-WindowsOptionalFeature -Online -FeatureName VirtualMachinePlatform -NoRestart
-          Disable-WindowsOptionalFeature -Online -FeatureName Microsoft-Windows-Subsystem-Linux -NoRestart  # If present
-          
-          # Edit registry to mask VM (e.g., for Azure/Hyper-V)
-          Set-ItemProperty -Path 'HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion' -Name "ProductName" -Value "Windows Server 2022 Datacenter" -Force
-          Set-ItemProperty -Path 'HKLM:\HARDWARE\DESCRIPTION\System\BIOS' -Name "SystemManufacturer" -Value "Dell Inc." -Force  # Spoof real OEM
-          Set-ItemProperty -Path 'HKLM:\HARDWARE\DESCRIPTION\System\BIOS' -Name "SystemProductName" -Value "OptiPlex 790" -Force
-          
-          # Clear VM processes/services if any
-          Stop-Service -Name vmms -Force -ErrorAction SilentlyContinue
-          
-          # Note: A full restart (Restart-Computer -Force) would apply all changes but terminates the GitHub runner job.
-          # Trigger the workflow again after manual reboot if possible, or use self-hosted runners for persistence.
-
       - name: Create RDP User with Secure Password
         run: |
           Add-Type -AssemblyName System.Security
